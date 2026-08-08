@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=device-width, initial-scale=1.0">
+    <meta name="description" content="An interactive visualization of the Sieve of Eratosthenes using Periodic Anti-Node Wave Interference, palindromic symmetry, sub-periodicity, and moduli mutations.">
+    <title>Periodic Anti-Node Sieve Visualizer</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-dark: #0f1115;
+            --card-bg: rgba(22, 26, 34, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-cyan: #06b6d4;
+            --accent-emerald: #10b981;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            
+            /* Sieve Taxonomy Colors */
+            --color-prime: #10b981;      /* Emerald */
+            --color-semiprime: #d97706;   /* Amber */
+            --color-almost-prime: #dc2626;/* Red */
+            --color-anti-node: #a855f7;   /* Purple */
+            --color-node: #4b5563;        /* Slate */
+            --color-unprocessed: #374151; /* Gray */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(at 10% 20%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 90% 80%, rgba(59, 130, 246, 0.15) 0px, transparent 50%);
+        }
+
+        header {
+            padding: 24px 40px;
+            background: rgba(15, 17, 21, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo-area h1 {
+            font-size: 24px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .logo-area p {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .main-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 30px;
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 30px;
+        }
+
+        /* Sidebar Panel */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .sidebar h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .control-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .control-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 10px;
+            color: white;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .control-input:focus {
+            border-color: var(--accent-blue);
+        }
+
+        .prime-checkbox-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .prime-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 8px 0;
+            color: var(--text-main);
+            font-family: 'JetBrains Mono', monospace;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .prime-btn.active {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-color: transparent;
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.4);
+        }
+
+        .action-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            border: none;
+            border-radius: 8px;
+            padding: 12px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: filter 0.2s;
+            margin-top: 10px;
+        }
+
+        .action-btn:hover {
+            filter: brightness(1.1);
+        }
+
+        /* Tabs and Viewports */
+        .viewport-tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: 1px solid var(--card-border);
+            padding: 10px 20px;
+            border-radius: 30px;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .tab-btn:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-btn.active {
+            background: var(--text-main);
+            color: var(--bg-dark);
+            border-color: var(--text-main);
+        }
+
+        .view-content {
+            display: none;
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        .view-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Interference Grid styling */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
+            gap: 8px;
+            margin-top: 15px;
+            max-height: 600px;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+
+        .grid-cell {
+            aspect-ratio: 1;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            user-select: none;
+        }
+
+        .grid-cell:hover {
+            transform: scale(1.05);
+            z-index: 10;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .cell-number {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .cell-sub {
+            font-size: 9px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+            margin-top: 2px;
+        }
+
+        /* Master colors for classifications */
+        .cell-prime { border-color: var(--color-prime); background: rgba(16, 185, 129, 0.15); }
+        .cell-semiprime { border-color: var(--color-semiprime); background: rgba(217, 119, 6, 0.15); }
+        .cell-almost-prime { border-color: var(--color-almost-prime); background: rgba(220, 38, 38, 0.15); }
+        .cell-anti-node { border-color: var(--color-anti-node); background: rgba(168, 85, 247, 0.2); box-shadow: inset 0 0 10px rgba(168, 85, 247, 0.2); }
+        .cell-node { border-color: var(--color-node); background: rgba(75, 85, 99, 0.08); opacity: 0.6; }
+
+        .cell-q-guarantee::after {
+            content: '';
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+        }
+
+        /* Detail Panel */
+        .info-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .info-pill {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-pill strong {
+            color: var(--accent-cyan);
+        }
+
+        /* Legend */
+        .legend-container {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        .legend-color {
+            width: 14px;
+            height: 14px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Wave Interference View */
+        .canvas-container {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 15px;
+            position: relative;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 350px;
+        }
+
+        /* Symmetry and Sub-cycles styling */
+        .symmetry-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .subcycle-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .subcycle-row {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .subcycle-title {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .subcycle-blocks {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .subcycle-block {
+            padding: 4px 8px;
+            font-size: 11px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .subcycle-block.eliminated {
+            text-decoration: line-through;
+            opacity: 0.4;
+            background: rgba(220, 38, 38, 0.1);
+            color: #ef4444;
+        }
+
+        /* Moduli Analysis Styling */
+        .moduli-chart-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .bar-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .bar-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .bar-label {
+            width: 70px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+        }
+
+        .bar-wrapper {
+            flex-grow: 1;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan));
+            border-radius: 4px;
+            transition: width 0.5s ease-out;
+        }
+
+        .bar-val {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+        }
+
+        /* Sidebar tooltip card */
+        .inspect-card h3 {
+            font-size: 18px;
+            color: var(--accent-cyan);
+            margin-bottom: 8px;
+        }
+        
+        .inspect-details {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-area">
+            <h1>Periodic Anti-Node Sieve Visualizer</h1>
+            <p>v3.0 • INTERFERENCE OF WAVES & THE REDUCED RESIDUE SYSTEM</p>
+        </div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted);">
+            Active Period width: <strong id="rrs-period-header" style="color: var(--accent-cyan);">30</strong>
+        </div>
+    </header>
+
+    <div class="main-container">
+        
+        <!-- Sidebar Controls & Inspection -->
+        <div class="sidebar">
+            <div class="glass-card">
+                <h2>Controls</h2>
+                <div class="control-group">
+                    <span class="control-label">Limit Range <span id="limit-val">300</span></span>
+                    <input type="range" id="limit-range" class="control-input" min="30" max="600" value="300" step="10">
+                </div>
+                
+                <div class="control-group">
+                    <span class="control-label">Sieve Primes (p<sub>n</sub>)</span>
+                    <div class="prime-checkbox-grid">
+                        <button class="prime-btn active" data-prime="2">2</button>
+                        <button class="prime-btn active" data-prime="3">3</button>
+                        <button class="prime-btn active" data-prime="5">5</button>
+                        <button class="prime-btn" data-prime="7">7</button>
+                        <button class="prime-btn" data-prime="11">11</button>
+                        <button class="prime-btn" data-prime="13">13</button>
+                        <button class="prime-btn" data-prime="17">17</button>
+                        <button class="prime-btn" data-prime="19">19</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card inspect-card">
+                <h2>Cell Inspector</h2>
+                <div id="inspector-placeholder" style="color: var(--text-muted); font-style: italic; font-size: 14px;">
+                    Hover over or click a number cell to inspect its periodic geometry.
+                </div>
+                <div id="inspector-content" style="display: none;">
+                    <h3 id="inspect-num">42</h3>
+                    <div class="inspect-details">
+                        <div>Classification: <strong id="inspect-class" style="color: var(--color-semiprime);">Semiprime</strong></div>
+                        <div>Prime Factors (Ω): <span id="inspect-factors">2 &times; 3</span></div>
+                        <div>Divisor count d(n): <span id="inspect-divisors">8</span></div>
+                        <div>RRS Status: <span id="inspect-rrs">Node</span></div>
+                        <div>Modulus Class (mod 3): <span id="inspect-mod3">3n+0</span></div>
+                        <div id="inspect-guarantee-row" style="display: none; color: var(--accent-cyan); font-weight: 600;">
+                            ✓ Under Quadratic Guarantee
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Visualizers -->
+        <div>
+            <div class="viewport-tabs">
+                <button class="tab-btn active" data-tab="grid-tab">Interference Grid</button>
+                <button class="tab-btn" data-tab="waves-tab">Wave Interference</button>
+                <button class="tab-btn" data-tab="symmetry-tab">Symmetry & Sub-Cycles</button>
+                <button class="tab-btn" data-tab="moduli-tab">Moduli Analysis</button>
+            </div>
+
+            <!-- TAB 1: Grid Sieve Visualizer -->
+            <div id="grid-tab" class="view-content active">
+                <div class="glass-card">
+                    <div class="info-bar">
+                        <div class="info-pill">Primorial Period (P<sub>n</sub>#): <strong id="val-primorial">30</strong></div>
+                        <div class="info-pill">RRS Size φ(P<sub>n</sub>#): <strong id="val-rrs-size">8</strong></div>
+                        <div class="info-pill">Quadratic Guarantee Limit (p<sub>n+1</sub><sup>2</sup>): <strong id="val-quad-limit">49</strong></div>
+                        <div class="info-pill">Max divisor count max d(n): <strong id="val-max-div">12</strong></div>
+                    </div>
+
+                    <div class="legend-container">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: var(--color-prime);"></div>
+                            <span>Primes (In RRS &lt; p<sub>n+1</sub><sup>2</sup>)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: var(--color-anti-node);"></div>
+                            <span>Anti-Nodes (Surviving Totitives / RRS Gaps)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: var(--color-semiprime);"></div>
+                            <span>Semiprimes (Ω = 2)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: var(--color-almost-prime);"></div>
+                            <span>k-Almost Primes (Ω ≥ 3)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: var(--color-node);"></div>
+                            <span>Nodes (Periodic Multiples)</span>
+                        </div>
+                    </div>
+
+                    <div class="grid-container" id="sieve-grid">
+                        <!-- Dynamically filled cells -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: Wave Interference Canvas -->
+            <div id="waves-tab" class="view-content">
+                <div class="glass-card">
+                    <p style="margin-bottom: 12px; color: var(--text-muted); font-size: 14px;">
+                        Visualizing the sieve as overlapping square/periodic wave functions. Peaks represent "nodes" (multiples). The troughs/gaps where NO wave peaks align represent the <strong>Anti-Nodes (Totitives)</strong>.
+                    </p>
+                    <div class="canvas-container">
+                        <canvas id="waves-canvas"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: Symmetry & Sub-Cycles -->
+            <div id="symmetry-tab" class="view-content">
+                <div class="glass-card">
+                    <h2>Palindromic Symmetry of RRS</h2>
+                    <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 15px;">
+                        Every RRS has reflective symmetry around the midpoint P<sub>n</sub># / 2. If x is an anti-node, then P<sub>n</sub># - x is also an anti-node.
+                    </p>
+                    <div id="symmetry-visualizer" style="display: flex; flex-direction: column; gap: 10px; font-family: 'JetBrains Mono', monospace; font-size: 13px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px;">
+                        <!-- Symmetry rows generated in JS -->
+                    </div>
+
+                    <h2 style="margin-top: 25px;">Nested Sub-Cycles & Rotational Deletion</h2>
+                    <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 15px;">
+                        Adding a prime p<sub>n</sub> expands the period width to P<sub>n</sub># = p<sub>n</sub> &times; P<sub>n-1</sub>#. We see p<sub>n</sub> copies of the sub-cycle. Because they are coprime, the multiples of p<sub>n</sub> rotate and delete exactly one anti-node from each sub-cycle.
+                    </p>
+                    <div class="subcycle-container" id="subcycle-visualizer">
+                        <!-- Subcycles generated in JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: Moduli Analysis & Mutations -->
+            <div id="moduli-tab" class="view-content">
+                <div class="glass-card">
+                    <h2>Modulus Distribution (3n+1 vs 3n+2)</h2>
+                    <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 15px;">
+                        Analyzing the distribution of surviving anti-nodes (totitives) across different remainder classes. This shows how "gaps" mutate as the primorial width expands.
+                    </p>
+
+                    <div class="moduli-chart-container">
+                        <div class="glass-card" style="background: rgba(0,0,0,0.2);">
+                            <h3>Modulo 3 Classes</h3>
+                            <div class="bar-chart" id="mod3-bars">
+                                <!-- Modulo bars generated dynamically -->
+                            </div>
+                        </div>
+
+                        <div class="glass-card" style="background: rgba(0,0,0,0.2);">
+                            <h3>Modulo 4 Classes</h3>
+                            <div class="bar-chart" id="mod4-bars">
+                                <!-- Modulo bars generated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        // --- State Management ---
+        const ALL_PRIMES = [2, 3, 5, 7, 11, 13, 17, 19];
+        let activePrimes = [2, 3, 5]; // Default
+        let rangeLimit = 300;
+        let activeTab = 'grid-tab';
+
+        // --- Math & helper functions ---
+        function getPrimorial(primes) {
+            return primes.reduce((acc, val) => acc * val, 1);
+        }
+
+        // Return next prime after the highest in activePrimes
+        function getNextPrime(primes) {
+            if (primes.length === 0) return 2;
+            const maxP = Math.max(...primes);
+            const candidates = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31];
+            const idx = candidates.indexOf(maxP);
+            return idx !== -1 && idx < candidates.length - 1 ? candidates[idx + 1] : maxP + 2;
+        }
+
+        // Calculate Prime Factorization details
+        function getFactorization(n) {
+            if (n < 2) return { factors: [], count: 0 };
+            let temp = n;
+            const factors = [];
+            let count = 0;
+            let divisor = 2;
+            while (temp > 1) {
+                while (temp % divisor === 0) {
+                    factors.push(divisor);
+                    count++;
+                    temp /= divisor;
+                }
+                divisor++;
+                if (divisor * divisor > temp) {
+                    if (temp > 1) {
+                        factors.push(temp);
+                        count++;
+                    }
+                    break;
+                }
+            }
+            return { factors, count };
+        }
+
+        // Calculate Divisor count d(n)
+        function getDivisorCount(n) {
+            if (n === 1) return 1;
+            let count = 0;
+            for (let i = 1; i <= Math.sqrt(n); i++) {
+                if (n % i === 0) {
+                    count += (n / i === i) ? 1 : 2;
+                }
+            }
+            return count;
+        }
+
+        // Is number coprime to all active primes? (Surviving Anti-node)
+        function isAntiNode(n, primes) {
+            if (n === 1) return true;
+            for (let p of primes) {
+                if (n % p === 0) return false;
+            }
+            return true;
+        }
+
+        // Calculate RRS of active primes
+        function getRRS(primes) {
+            const P = getPrimorial(primes);
+            const rrs = [];
+            for (let i = 1; i < P; i++) {
+                if (isAntiNode(i, primes)) {
+                    rrs.push(i);
+                }
+            }
+            return rrs;
+        }
+
+        // --- Render UI ---
+        function renderAll() {
+            // Update Headers & metrics
+            const P = getPrimorial(activePrimes);
+            const nextP = getNextPrime(activePrimes);
+            const quadLimit = nextP * nextP;
+            const rrs = getRRS(activePrimes);
+
+            document.getElementById("rrs-period-header").innerText = P;
+            document.getElementById("val-primorial").innerText = P;
+            document.getElementById("val-rrs-size").innerText = rrs.length;
+            document.getElementById("val-quad-limit").innerText = quadLimit;
+
+            let maxDiv = 1;
+            for (let i = 1; i <= rangeLimit; i++) {
+                maxDiv = Math.max(maxDiv, getDivisorCount(i));
+            }
+            document.getElementById("val-max-div").innerText = maxDiv;
+
+            // Render Tab contents
+            renderGrid(P, quadLimit);
+            renderWaves();
+            renderSymmetry(P, rrs);
+            renderSubCycles(P);
+            renderModuli(rrs);
+        }
+
+        function renderGrid(P, quadLimit) {
+            const container = document.getElementById("sieve-grid");
+            container.innerHTML = "";
+
+            for (let i = 1; i <= rangeLimit; i++) {
+                const cell = document.createElement("div");
+                cell.className = "grid-cell";
+
+                const isPrime = getFactorization(i).count === 1 && i > 1;
+                const isAnti = isAntiNode(i, activePrimes);
+
+                // Classify cell
+                if (isPrime && isAnti && i < quadLimit) {
+                    cell.classList.add("cell-prime");
+                } else if (isAnti) {
+                    cell.classList.add("cell-anti-node");
+                } else {
+                    // Check factorization
+                    const fact = getFactorization(i);
+                    if (fact.count === 2) {
+                        cell.classList.add("cell-semiprime");
+                    } else if (fact.count >= 3) {
+                        cell.classList.add("cell-almost-prime");
+                    } else {
+                        cell.classList.add("cell-node");
+                    }
+                }
+
+                // Add dot indicator for Quadratic Guarantee
+                if (isAnti && i < quadLimit && i > 1) {
+                    cell.classList.add("cell-q-guarantee");
+                }
+
+                // Number inside cell
+                const numSpan = document.createElement("span");
+                numSpan.className = "cell-number";
+                numSpan.innerText = i;
+                cell.appendChild(numSpan);
+
+                // Subtitle factor count or label
+                const subSpan = document.createElement("span");
+                subSpan.className = "cell-sub";
+                const d = getDivisorCount(i);
+                subSpan.innerText = `d=${d}`;
+                cell.appendChild(subSpan);
+
+                // Inspector event listeners
+                cell.addEventListener("mouseenter", () => inspectNumber(i, isAnti, quadLimit));
+                cell.addEventListener("click", () => inspectNumber(i, isAnti, quadLimit));
+
+                container.appendChild(cell);
+            }
+        }
+
+        function inspectNumber(n, isAnti, quadLimit) {
+            document.getElementById("inspector-placeholder").style.display = "none";
+            const content = document.getElementById("inspector-content");
+            content.style.display = "block";
+
+            document.getElementById("inspect-num").innerText = n;
+
+            const fact = getFactorization(n);
+            const isPrime = fact.count === 1 && n > 1;
+
+            let classification = "Composite";
+            if (isPrime) classification = "Prime";
+            else if (fact.count === 2) classification = "Semiprime (Ω = 2)";
+            else if (fact.count >= 3) classification = `k-Almost Prime (Ω = ${fact.count})`;
+
+            document.getElementById("inspect-class").innerText = classification;
+            
+            let factorString = "None";
+            if (n > 1) {
+                factorString = fact.factors.join(" × ");
+            }
+            document.getElementById("inspect-factors").innerText = factorString;
+            document.getElementById("inspect-divisors").innerText = getDivisorCount(n);
+            document.getElementById("inspect-rrs").innerText = isAnti ? "Anti-Node (Surviving gap)" : "Node (Sieved Multiple)";
+            document.getElementById("inspect-mod3").innerText = `3n + ${n % 3}`;
+
+            const guaranteeRow = document.getElementById("inspect-guarantee-row");
+            if (isAnti && n < quadLimit && n > 1) {
+                guaranteeRow.style.display = "block";
+            } else {
+                guaranteeRow.style.display = "none";
+            }
+        }
+
+        // Draw Wave interference
+        function renderWaves() {
+            const canvas = document.getElementById("waves-canvas");
+            if (!canvas) return;
+            const ctx = canvas.getContext("2d");
+            
+            // Adjust to container dimensions
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+
+            const width = rect.width;
+            const height = rect.height;
+
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw grid background line
+            ctx.strokeStyle = "rgba(255,255,255,0.05)";
+            ctx.lineWidth = 1;
+            
+            const cellCount = Math.min(100, rangeLimit);
+            const step = width / cellCount;
+
+            for (let i = 0; i <= cellCount; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * step, 0);
+                ctx.lineTo(i * step, height);
+                ctx.stroke();
+            }
+
+            // Draw wave for each prime
+            activePrimes.forEach((p, idx) => {
+                ctx.beginPath();
+                ctx.strokeStyle = `hsl(${(idx * 360 / activePrimes.length)}, 70%, 60%)`;
+                ctx.lineWidth = 2;
+                
+                // Draw as square-like waves representing periodic multiples
+                for (let x = 0; x <= cellCount; x++) {
+                    const nextX = x + 1;
+                    const isMultiple = (x % p === 0);
+                    
+                    const waveY = 50 + idx * 40 + (isMultiple ? 20 : 0);
+                    
+                    if (x === 0) {
+                        ctx.moveTo(0, waveY);
+                    } else {
+                        ctx.lineTo(x * step, waveY);
+                        // Vertical transition line
+                        const nextMultiple = (nextX % p === 0);
+                        const nextY = 50 + idx * 40 + (nextMultiple ? 20 : 0);
+                        ctx.lineTo(x * step, nextY);
+                    }
+                }
+                ctx.stroke();
+
+                // Draw Label
+                ctx.fillStyle = "#fff";
+                ctx.font = "12px monospace";
+                ctx.fillText(`p = ${p}`, 10, 45 + idx * 40);
+            });
+
+            // Draw resulting Master Anti-Node / Totitive timeline
+            ctx.fillStyle = "rgba(168, 85, 247, 0.15)";
+            ctx.strokeStyle = "var(--accent-purple)";
+            ctx.lineWidth = 2;
+            
+            const timelineY = 50 + activePrimes.length * 40;
+            ctx.fillText(`RRS (Anti-Nodes)`, 10, timelineY - 10);
+
+            for (let x = 1; x <= cellCount; x++) {
+                const isAnti = isAntiNode(x, activePrimes);
+                if (isAnti) {
+                    ctx.fillStyle = "rgba(168, 85, 247, 0.4)";
+                    ctx.fillRect((x - 1) * step, timelineY, step, 30);
+                    ctx.strokeRect((x - 1) * step, timelineY, step, 30);
+                }
+            }
+        }
+
+        // Draw Palindromic symmetry
+        function renderSymmetry(P, rrs) {
+            const container = document.getElementById("symmetry-visualizer");
+            container.innerHTML = "";
+
+            const half = P / 2;
+            const midHeader = document.createElement("div");
+            midHeader.style.color = "var(--accent-cyan)";
+            midHeader.style.fontWeight = "bold";
+            midHeader.innerText = `Symmetry Center: P/2 = ${half}`;
+            container.appendChild(midHeader);
+
+            // Pair elements from front and back
+            const pairs = [];
+            const rrsSet = new Set(rrs);
+
+            rrs.forEach(x => {
+                if (x < half) {
+                    const complement = P - x;
+                    pairs.push({ x, complement, isValid: rrsSet.has(complement) });
+                }
+            });
+
+            if (pairs.length === 0) {
+                container.innerHTML += `<div style="color: var(--text-muted);">Increase primes selection to see symmetry.</div>`;
+                return;
+            }
+
+            pairs.slice(0, 15).forEach(pair => {
+                const row = document.createElement("div");
+                row.style.display = "flex";
+                row.style.justifyContent = "space-between";
+                row.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
+                row.style.padding = "4px 0";
+
+                row.innerHTML = `
+                    <span>x = <strong>${pair.x}</strong></span>
+                    <span>&harr;</span>
+                    <span>P - x = <strong>${pair.complement}</strong></span>
+                    <span style="color: var(--accent-emerald)">${pair.isValid ? "✓ Symmetric" : "✗ Error"}</span>
+                `;
+                container.appendChild(row);
+            });
+
+            if (pairs.length > 15) {
+                const more = document.createElement("div");
+                more.style.color = "var(--text-muted)";
+                more.innerText = `... and ${pairs.length - 15} more symmetric pairs`;
+                container.appendChild(more);
+            }
+        }
+
+        // Render Sub-cycles & Rotational Deletion
+        function renderSubCycles(P) {
+            const container = document.getElementById("subcycle-visualizer");
+            container.innerHTML = "";
+
+            if (activePrimes.length < 2) {
+                container.innerHTML = `<div style="color: var(--text-muted)">Requires at least 2 active primes.</div>`;
+                return;
+            }
+
+            // Let's analyze the relation between P_n and P_{n-1}
+            const sortedPrimes = [...activePrimes].sort((a,b)=>a-b);
+            const lastPrime = sortedPrimes[sortedPrimes.length - 1];
+            const prevPrimes = sortedPrimes.slice(0, -1);
+            const prevP = getPrimorial(prevPrimes);
+
+            const prevRRS = getRRS(prevPrimes);
+
+            const desc = document.createElement("div");
+            desc.style.fontSize = "14px";
+            desc.style.marginBottom = "10px";
+            desc.innerHTML = `Sub-period: P<sub>n-1</sub># = <strong>${prevP}</strong>. Master period has <strong>${lastPrime}</strong> sub-cycles of this size.`;
+            container.appendChild(desc);
+
+            // Show rotational deletion inside each sub-period block
+            for (let cycle = 0; cycle < Math.min(5, lastPrime); cycle++) {
+                const row = document.createElement("div");
+                row.className = "subcycle-row";
+
+                const title = document.createElement("div");
+                title.className = "subcycle-title";
+                title.innerText = `Sub-cycle ${cycle + 1} (Range ${cycle * prevP + 1} to ${(cycle + 1) * prevP})`;
+                row.appendChild(title);
+
+                const blocks = document.createElement("div");
+                blocks.className = "subcycle-blocks";
+
+                prevRRS.forEach(r => {
+                    const currentNum = cycle * prevP + r;
+                    const isDeleted = (currentNum % lastPrime === 0);
+                    
+                    const block = document.createElement("div");
+                    block.className = `subcycle-block ${isDeleted ? 'eliminated' : ''}`;
+                    block.innerText = `${currentNum} ${isDeleted ? '(x)' : ''}`;
+                    blocks.appendChild(block);
+                });
+
+                row.appendChild(blocks);
+                container.appendChild(row);
+            }
+
+            if (lastPrime > 5) {
+                const more = document.createElement("div");
+                more.style.color = "var(--text-muted)";
+                more.innerText = `... and ${lastPrime - 5} more sub-cycles`;
+                container.appendChild(more);
+            }
+        }
+
+        // Render Moduli charts
+        function renderModuli(rrs) {
+            const countMod = (mod) => {
+                const counts = {};
+                for (let i = 0; i < mod; i++) counts[i] = 0;
+                
+                rrs.forEach(x => {
+                    counts[x % mod]++;
+                });
+                return counts;
+            };
+
+            const drawBars = (containerId, mod) => {
+                const container = document.getElementById(containerId);
+                container.innerHTML = "";
+
+                const counts = countMod(mod);
+                const total = rrs.length;
+
+                for (let r = 0; r < mod; r++) {
+                    const item = document.createElement("div");
+                    item.className = "bar-item";
+
+                    const pct = total > 0 ? (counts[r] / total * 100) : 0;
+
+                    item.innerHTML = `
+                        <div class="bar-label">${mod}n + ${r}</div>
+                        <div class="bar-wrapper">
+                            <div class="bar-fill" style="width: ${pct}%"></div>
+                            <span class="bar-val">${counts[r]} (${pct.toFixed(1)}%)</span>
+                        </div>
+                    `;
+                    container.appendChild(item);
+                }
+            };
+
+            drawBars("mod3-bars", 3);
+            drawBars("mod4-bars", 4);
+        }
+
+        // --- Event Listeners ---
+        document.getElementById("limit-range").addEventListener("input", (e) => {
+            rangeLimit = parseInt(e.target.value);
+            document.getElementById("limit-val").innerText = rangeLimit;
+            renderAll();
+        });
+
+        document.querySelectorAll(".prime-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const p = parseInt(btn.getAttribute("data-prime"));
+                if (activePrimes.includes(p)) {
+                    activePrimes = activePrimes.filter(x => x !== p);
+                    btn.classList.remove("active");
+                } else {
+                    activePrimes.push(p);
+                    activePrimes.sort((a,b)=>a-b);
+                    btn.classList.add("active");
+                }
+                renderAll();
+            });
+        });
+
+        document.querySelectorAll(".tab-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+                document.querySelectorAll(".view-content").forEach(v => v.classList.remove("active"));
+
+                btn.classList.add("active");
+                activeTab = btn.getAttribute("data-tab");
+                document.getElementById(activeTab).classList.add("active");
+                
+                if (activeTab === 'waves-tab') {
+                    // Timeout allows DOM state layout to stabilize for canvas sizing
+                    setTimeout(renderWaves, 50);
+                }
+            });
+        });
+
+        // Handle canvas redraws on resize
+        window.addEventListener("resize", () => {
+            if (activeTab === 'waves-tab') {
+                renderWaves();
+            }
+        });
+
+        // Initial Boot
+        renderAll();
+    </script>
+</body>
+</html>
