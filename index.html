@@ -73,12 +73,33 @@
         /* Controls Panel */
         .controls-container {
             display: flex;
-            gap: 24px;
-            padding: 16px 30px;
-            background: rgba(27, 38, 59, 0.2);
-            border-bottom: 1px solid var(--card-border);
+            flex-direction: column;
+            gap: 4px;
+            padding: 8px 0 8px 16px;
+        }
+
+        /* Row 1: sliders (the lock checkbox sits under its own slider);
+           row 2: all the other checkboxes. */
+        .controls-row {
+            display: flex;
+            gap: 4px 24px;
             flex-wrap: wrap;
+            align-items: flex-start;
+        }
+
+        .controls-row .checkbox-container {
+            margin-top: 6px;
+        }
+
+        .label-with-lock {
+            display: flex;
             align-items: center;
+            gap: 12px;
+        }
+
+        .controls-row .label-with-lock .checkbox-container {
+            margin-top: 0;
+            font-size: 12px;
         }
 
         .control-item {
@@ -137,6 +158,24 @@
         }
 
         .checkbox-container input {
+            display: none;
+        }
+
+        .checkbox-container[hidden] {
+            display: none;
+        }
+
+        /* Shown when the grid is too big to draw lines on, or slow to redraw */
+        .render-warning {
+            padding: 4px 30px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: #fca5a5;
+            background: rgba(220, 38, 38, 0.12);
+            border-bottom: 1px solid rgba(220, 38, 38, 0.4);
+        }
+
+        .render-warning[hidden] {
             display: none;
         }
 
@@ -231,6 +270,21 @@
             color: #ffb347;
         }
 
+        /* Omega-graded rough composites (toggle): semiprimes keep the amber
+           above; Omega = 3 is red, Omega >= 4 is purple -- same fill + inset
+           outline + colored text style. */
+        .grid-cell.rough-composite.omega-3 {
+            background: rgba(239, 68, 68, 0.12);
+            box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.6);
+            color: #f87171;
+        }
+
+        .grid-cell.rough-composite.omega-4plus {
+            background: rgba(168, 85, 247, 0.14);
+            box-shadow: inset 0 0 0 1px rgba(168, 85, 247, 0.65);
+            color: #c084fc;
+        }
+
         /* Overlay Canvas */
         .overlay-canvas {
             position: absolute;
@@ -245,20 +299,25 @@
         /* Info Dashboard */
         .dashboard {
             display: flex;
-            gap: 24px;
-            flex-wrap: wrap;
-            padding: 6px 30px;
+            flex-direction: column;
+            gap: 2px;
+            padding: 2px 0 4px 16px;
             background: rgba(0, 180, 216, 0.04);
             border-bottom: 1px solid var(--card-border);
             font-family: 'JetBrains Mono', monospace;
             font-size: 11px;
             color: var(--text-muted);
-            align-items: center;
         }
 
         .dashboard b {
             color: var(--text-main);
             font-weight: 600;
+            /* exact primorials run to ~900 digits at W = 2160 */
+            word-break: break-all;
+        }
+
+        .dashboard a {
+            color: var(--accent);
         }
 
         .dashboard .jumpable {
@@ -269,6 +328,48 @@
 
         .dashboard .jumpable:hover {
             color: #7cf3ff;
+        }
+
+        /* Collapsible panels: the native <details> triangle on the left hides
+           or shows the guide numbers / the controls independently. */
+        .panel {
+            border-bottom: 1px solid var(--card-border);
+            padding: 4px 30px 4px 14px;
+        }
+
+        .panel.guide {
+            background: rgba(0, 180, 216, 0.04);
+        }
+
+        .panel.controls {
+            background: rgba(27, 38, 59, 0.2);
+        }
+
+        .panel > summary {
+            cursor: pointer;
+            user-select: none;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Click-to-edit slider values */
+        .control-label span.editable {
+            cursor: text;
+            text-decoration: underline dotted;
+        }
+
+        .value-editor {
+            width: 70px;
+            font: inherit;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent);
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--accent);
+            border-radius: 3px;
+            text-align: right;
         }
     </style>
 </head>
@@ -281,21 +382,31 @@
         </div>
     </header>
 
-    <div class="dashboard" id="dashboard">
-        <span>Primorial(<b id="dash-p1">7</b>) = <b id="dash-primorial">210</b></span>
-        <span>Next: Primorial(<b id="dash-p2">11</b>) = <b id="dash-next-primorial">2310</b></span>
-        <span>Next-prime square: <b id="dash-square" class="jumpable" title="Click to scroll to this cell">121</b> (sieve is guaranteed-complete up to this value)</span>
-    </div>
+    <details class="panel guide" open>
+        <summary>Guide Numbers</summary>
+        <div class="dashboard" id="dashboard">
+            <span>Width <b id="dash-width">7</b> = <b id="dash-width-factors">7</b> · Next primorial width: <b id="dash-primorial-width">30</b> (smallest primorial greater than the width)</span>
+            <span>Primorial(<b id="dash-p1">7</b>) = <b id="dash-primorial">210</b></span>
+            <span>Next: Primorial(<b id="dash-p2">11</b>) = <b id="dash-next-primorial">2310</b></span>
+            <span>Next-prime square: <b id="dash-square" class="jumpable" title="Click to scroll to this cell">121</b> (sieve is guaranteed-complete up to this value)</span>
+            <span>Next-prime cube: <b id="dash-cube" class="jumpable" title="Click to scroll to this cell">1331</b> (first missed Ω=3 composite)</span>
+            <span>Next-prime 4th power: <b id="dash-fourth" class="jumpable" title="Click to scroll to this cell">14641</b> (first missed Ω=4 composite)</span>
+            <span class="dash-ref">Primorial reference table: <a href="https://oeis.org/A002110" target="_blank" rel="noopener">OEIS A002110</a></span>
+        </div>
+    </details>
 
+    <details class="panel controls" open>
+    <summary>Controls</summary>
     <div class="controls-container">
+      <div class="controls-row">
         <div class="control-item">
             <div class="control-label">Sieve Length <span id="len-val">120</span></div>
-            <input type="range" id="len-slider" class="slider-input" min="10" max="5000" value="120">
+            <input type="range" id="len-slider" class="slider-input" min="10" max="1000000" value="120">
         </div>
 
         <div class="control-item">
             <div class="control-label">Grid Width (Columns) <span id="width-val">7</span></div>
-            <input type="range" id="width-slider" class="slider-input" min="2" max="30" value="7">
+            <input type="range" id="width-slider" class="slider-input" min="2" max="2160" value="7">
         </div>
 
         <div class="control-item">
@@ -305,32 +416,60 @@
 
         <div class="control-item">
             <div class="control-label">Zoom (Cell Size) <span id="zoom-val">45</span></div>
-            <input type="range" id="zoom-slider" class="slider-input" min="10" max="80" value="45">
+            <input type="range" id="zoom-slider" class="slider-input" min="3" max="80" value="45">
         </div>
 
         <div class="control-item">
+            <div class="label-with-lock">
             <div class="control-label">Max Strikeout Value <span id="max-strikeout-val">7</span></div>
-            <input type="range" id="max-strikeout-slider" class="slider-input" min="2" max="30" value="7">
+            <label class="checkbox-container" title="Lock Strikeout Max to Grid Width: the strikeout set is every prime up to the grid width. Unchecking (or moving/typing the Max Strikeout slider) sets it independently.">
+                <input type="checkbox" id="lock-strikeout-toggle" checked>
+                <span class="custom-checkmark"></span>
+                Lock to Grid Width
+            </label>
+            </div>
+            <input type="range" id="max-strikeout-slider" class="slider-input" min="2" max="2160" value="7">
         </div>
+      </div>
 
-        <label class="checkbox-container">
-            <input type="checkbox" id="lock-strikeout-toggle" checked>
-            <span class="custom-checkmark"></span>
-            Lock Strikeout Max to Grid Width
-        </label>
+      <div class="controls-row">
 
-        <label class="checkbox-container">
+        <!-- DEPRECATED (spec §15): composite strikeout options. Hidden, so both
+             stay unchecked; remove `hidden` from both labels to restore. -->
+        <label class="checkbox-container" hidden title="Show Non-Prime Strikeouts (Multi-Factor Stacking): composite periods also draw lines, stacking thicker on numbers with more prime factors.">
             <input type="checkbox" id="non-prime-toggle">
             <span class="custom-checkmark"></span>
-            Show Non-Prime Strikeouts (Multi-Factor Stacking)
+            Non-Prime Strikeouts (Stacking)
         </label>
 
-        <label class="checkbox-container">
+        <label class="checkbox-container" hidden title="Give Each Composite Its Own Color: instead of inheriting its smallest prime factor's color, each composite strikeout gets its own persistent color.">
             <input type="checkbox" id="individual-color-toggle">
             <span class="custom-checkmark"></span>
-            Give Each Composite Its Own Color
+            Own Color per Composite
         </label>
+
+        <label class="checkbox-container" title="Show Strikeout Lines: uncheck to hide all strikeout lines and see only the cell highlighting pattern.">
+            <input type="checkbox" id="show-lines-toggle" checked>
+            <span class="custom-checkmark"></span>
+            Strikeout Lines
+        </label>
+
+        <label class="checkbox-container" title="Circle Strikeout Primes When Lines Are Off: keep a colored circle on every prime in the active strikeout set (all in the top row when locked).">
+            <input type="checkbox" id="circle-primes-toggle" checked>
+            <span class="custom-checkmark"></span>
+            Circle Strikeout Primes (Lines Off)
+        </label>
+
+        <label class="checkbox-container" title="Grade Unstruck Composites by Ω: split the amber "dirty numbers" by prime-factor count Ω(n): amber = semiprime (2), red = 3 factors, purple = 4 or more.">
+            <input type="checkbox" id="grade-omega-toggle">
+            <span class="custom-checkmark"></span>
+            Grade Unstruck by Ω (amber 2 · red 3 · purple 4+)
+        </label>
+      </div>
     </div>
+    </details>
+
+    <div class="render-warning" id="render-warning" hidden></div>
 
     <div class="workspace-container">
         <div class="grid-wrapper" id="grid-wrapper">
@@ -354,6 +493,17 @@
         const lockStrikeoutToggle = document.getElementById("lock-strikeout-toggle");
         const nonPrimeToggle = document.getElementById("non-prime-toggle");
         const individualColorToggle = document.getElementById("individual-color-toggle");
+        const showLinesToggle = document.getElementById("show-lines-toggle");
+        const gradeOmegaToggle = document.getElementById("grade-omega-toggle");
+        const circlePrimesToggle = document.getElementById("circle-primes-toggle");
+        const renderWarning = document.getElementById("render-warning");
+
+        // Browser canvas limits (measured in Chromium: 65,535 px per side and
+        // 16384^2 px total area; Safari/Firefox may be lower). Past these the
+        // canvas silently draws nothing, so the lines just vanish.
+        const MAX_CANVAS_SIDE = 65535;
+        const MAX_CANVAS_AREA = 16384 * 16384;
+        const SLOW_REDRAW_MS = 2000;
 
         // Values
         const lenVal = document.getElementById("len-val");
@@ -368,6 +518,36 @@
         const dashP2 = document.getElementById("dash-p2");
         const dashNextPrimorial = document.getElementById("dash-next-primorial");
         const dashSquare = document.getElementById("dash-square");
+        const dashWidth = document.getElementById("dash-width");
+        const dashWidthFactors = document.getElementById("dash-width-factors");
+        const dashPrimorialWidth = document.getElementById("dash-primorial-width");
+        const dashCube = document.getElementById("dash-cube");
+        const dashFourth = document.getElementById("dash-fourth");
+
+        // Primorials are computed exactly as BigInt (plain numbers lose
+        // precision past 2^53, i.e. from 53#, and overflow to Infinity past
+        // ~709#). Shown in full with a digit count once long; only abbreviated
+        // past MAX_FULL_DIGITS, which the current slider limits never reach
+        // (2160# has ~920 digits and formats in well under a millisecond).
+        const MAX_FULL_DIGITS = 20000;
+        function formatBig(n) {
+            const digits = n.toString().length;
+            if (digits > MAX_FULL_DIGITS) {
+                const str = n.toString();
+                return str.slice(0, 12) + "…" + str.slice(-12) + " (" + digits.toLocaleString() + " digits)";
+            }
+            return n.toLocaleString() + (digits > 15 ? " (" + digits + " digits)" : "");
+        }
+
+        // e.g. 360 -> "2³·3²·5"
+        function factorString(n) {
+            const SUP = "⁰¹²³⁴⁵⁶⁷⁸⁹";
+            const counts = new Map();
+            factorize(n).forEach(f => counts.set(f, (counts.get(f) || 0) + 1));
+            return [...counts].map(([p, e]) =>
+                e === 1 ? String(p) : p + String(e).split("").map(d => SUP[d]).join("")
+            ).join("·");
+        }
 
         // Helper to check if a number is prime
         function isPrime(num) {
@@ -460,12 +640,27 @@
         }
 
         function drawSieve() {
+            const startTime = performance.now();
+            const warnings = [];
+            drawSieveInner(warnings);
+            const elapsed = performance.now() - startTime;
+            if (elapsed > SLOW_REDRAW_MS) {
+                warnings.push(`Redraw took ${(elapsed / 1000).toFixed(1)} s -- expect lag at this sieve length.`);
+            }
+            renderWarning.innerText = warnings.join("  ·  ");
+            renderWarning.hidden = warnings.length === 0;
+        }
+
+        function drawSieveInner(warnings) {
             const N = parseInt(lenSlider.value);
             const W = parseInt(widthSlider.value);
             const baseThickness = parseInt(thickSlider.value);
             const CELL_SIZE = parseInt(zoomSlider.value);
             const showNonPrimes = nonPrimeToggle.checked;
             const individualColors = individualColorToggle.checked;
+            const showLines = showLinesToggle.checked;
+            const circlePrimes = circlePrimesToggle.checked;
+            const gradeOmega = gradeOmegaToggle.checked;
 
             // Strikeout Max: locked (default) keeps it equal to the grid width, as
             // before. Unlocked, it's an independent value -- letting the strikeout
@@ -513,33 +708,42 @@
             const nextPrimeForStrikeout = smallestPrimeAbove(maxStrikeout);
             const roughBoundary = nextPrimeForStrikeout * nextPrimeForStrikeout;
 
-            // Dashboard figures are deliberately based on W itself (the grid's own
-            // structure), independent of the strikeout max -- see spec v4.4 for the
-            // parked idea of showing both sets side by side.
-            const nextPrimeForW = smallestPrimeAbove(W);
-            let currentPrimorial = 1;
-            let largestPrimeLEW = null;
-            for (let p = 2; p <= W; p++) {
-                if (isPrime(p)) {
-                    currentPrimorial *= p;
-                    largestPrimeLEW = p;
-                }
+            // Dashboard: W's own factorization and the smallest primorial wider
+            // than W (the next width at which every smaller prime's line is
+            // vertical); then the primorial of the active strikeout set and the
+            // next one (these track Max Strikeout, so equal W's when locked).
+            let primorialWidth = 1n;
+            for (let p = 2; primorialWidth <= BigInt(W); p++) {
+                if (isPrime(p)) primorialWidth *= BigInt(p);
             }
-            const nextPrimorial = currentPrimorial * nextPrimeForW;
+            dashWidth.innerText = W;
+            dashWidthFactors.innerText = W === 1 ? "1" : factorString(W);
+            dashPrimorialWidth.innerText = formatBig(primorialWidth);
 
-            dashP1.innerText = largestPrimeLEW !== null ? largestPrimeLEW : "–";
-            dashPrimorial.innerText = currentPrimorial.toLocaleString();
-            dashP2.innerText = nextPrimeForW;
-            dashNextPrimorial.innerText = nextPrimorial.toLocaleString();
+            let currentPrimorial = 1n;
+            primeOrigins.forEach(p => { currentPrimorial *= BigInt(p); });
+            const nextPrimorial = currentPrimorial * BigInt(nextPrimeForStrikeout);
 
-            // Unlike the primorial figures above (deliberately W-based, see spec
-            // v4.4), this figure tracks the ACTIVE strikeout set: nextPrimeForStrikeout
-            // is based on maxStrikeout, not W. In the default locked case the two
-            // coincide (maxStrikeout === W), but once unlocked and set
-            // independently, this is the figure that actually matters -- it's the
-            // same roughBoundary driving the rough-composite highlighting above.
+            dashP1.innerText = primeOrigins.length ? primeOrigins[primeOrigins.length - 1] : "–";
+            dashPrimorial.innerText = formatBig(currentPrimorial);
+            dashP2.innerText = nextPrimeForStrikeout;
+            dashNextPrimorial.innerText = formatBig(nextPrimorial);
+
+            // Like the primorials above, this tracks the ACTIVE strikeout set
+            // (maxStrikeout), not W -- it's the same roughBoundary driving the
+            // rough-composite highlighting above.
             dashSquare.innerText = roughBoundary.toLocaleString();
             dashSquare.dataset.target = roughBoundary;
+
+            // Every unstruck composite has all its prime factors >= the next
+            // prime q, so the smallest one with Omega = 3 is q^3 and with
+            // Omega = 4 is q^4 -- the first amber/red/purple cells respectively.
+            const cube = roughBoundary * nextPrimeForStrikeout;
+            const fourth = cube * nextPrimeForStrikeout;
+            dashCube.innerText = cube.toLocaleString();
+            dashCube.dataset.target = cube;
+            dashFourth.innerText = fourth.toLocaleString();
+            dashFourth.dataset.target = fourth;
 
             for (let i = 1; i <= N; i++) {
                 const cell = document.createElement("div");
@@ -553,6 +757,11 @@
                 } else if (i >= roughBoundary && minPrimeFactor(i) > maxStrikeout) {
                     cell.classList.add("rough-composite");
                     cell.title = i + " = " + factorize(i).join(" × ");
+                    if (gradeOmega) {
+                        const omega = primeFactorCountWithMultiplicity(i);
+                        if (omega === 3) cell.classList.add("omega-3");
+                        else if (omega >= 4) cell.classList.add("omega-4plus");
+                    }
                 }
                 if (i % W === 0) {
                     cell.classList.add("last-column");
@@ -564,8 +773,36 @@
             const rect = grid.getBoundingClientRect();
             canvas.width = rect.width;
             canvas.height = rect.height;
+            const canvasTooBig = canvas.width > MAX_CANVAS_SIDE || canvas.height > MAX_CANVAS_SIDE ||
+                canvas.width * canvas.height > MAX_CANVAS_AREA;
+            // An over-limit canvas renders as an opaque white box over the
+            // grid, so hide it entirely (the cells stay visible and usable).
+            canvas.style.display = canvasTooBig ? "none" : "";
+            if (canvasTooBig) {
+                warnings.push(`Grid is ${canvas.width.toLocaleString()} × ${canvas.height.toLocaleString()} px, beyond the browser's canvas limit -- strikeout lines and circles can't be drawn. Zoom out, widen the grid, or shorten the sieve.`);
+                canvas.width = canvas.height = 0;
+            }
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const ANCHOR_RADIUS = CELL_SIZE * 0.38;
+
+            function drawAnchorCircle(p) {
+                const point = cellCenter(p);
+                ctx.beginPath();
+                ctx.strokeStyle = colorForPrime(p);
+                ctx.lineWidth = Math.max(2, baseThickness * 0.6);
+                ctx.arc(point.cx, point.cy, ANCHOR_RADIUS, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Lines off: leave only the cell pattern (primes, rough composites),
+            // optionally still circling every prime in the strikeout set -- all
+            // in the top row when locked, wherever they fall when unlocked.
+            if (!showLines) {
+                if (circlePrimes) primeOrigins.filter(p => p <= N).forEach(drawAnchorCircle);
+                return;
+            }
 
             const totalRows = Math.ceil(N / W);
             const gridBottomY = totalRows * CELL_SIZE;
@@ -683,7 +920,6 @@
             // A. Draw Prime Strikeouts (persistent color per prime identity).
             // Anchored (top-row, p <= W) primes get the keyhole treatment so
             // their own line never crosses over their own number.
-            const ANCHOR_RADIUS = CELL_SIZE * 0.38;
             primeOrigins.forEach(p => {
                 drawPeriod(p, colorForPrime(p), baseThickness, p <= W ? ANCHOR_RADIUS : 0);
             });
@@ -724,12 +960,7 @@
             // the line's origin point is easy to spot, in that prime's own color.
             primeOrigins.forEach(p => {
                 if (p > W) return; // not in row 0 -- no "top row" cell to anchor
-                const point = cellCenter(p);
-                ctx.beginPath();
-                ctx.strokeStyle = colorForPrime(p);
-                ctx.lineWidth = Math.max(2, baseThickness * 0.6);
-                ctx.arc(point.cx, point.cy, ANCHOR_RADIUS, 0, Math.PI * 2);
-                ctx.stroke();
+                drawAnchorCircle(p);
             });
         }
 
@@ -740,6 +971,49 @@
         zoomSlider.addEventListener("input", () => requestAnimationFrame(drawSieve));
         nonPrimeToggle.addEventListener("change", () => requestAnimationFrame(drawSieve));
         individualColorToggle.addEventListener("change", () => requestAnimationFrame(drawSieve));
+        showLinesToggle.addEventListener("change", () => requestAnimationFrame(drawSieve));
+        gradeOmegaToggle.addEventListener("change", () => requestAnimationFrame(drawSieve));
+        circlePrimesToggle.addEventListener("change", () => requestAnimationFrame(drawSieve));
+
+        // Click a slider's value to type an integer: Enter/blur commits
+        // (clamped to the slider's range), Escape cancels. Commits go through
+        // the slider's normal "input" event, so typing a Max Strikeout value
+        // unlocks it just like dragging does.
+        [[lenSlider, lenVal], [widthSlider, widthVal], [thickSlider, thickVal],
+         [zoomSlider, zoomVal], [maxStrikeoutSlider, maxStrikeoutVal]].forEach(([slider, label]) => {
+            label.classList.add("editable");
+            label.title = "Click to type a value";
+            label.addEventListener("click", () => {
+                const editor = document.createElement("input");
+                editor.type = "number";
+                editor.className = "value-editor";
+                editor.min = slider.min;
+                editor.max = slider.max;
+                editor.value = slider.value;
+                label.style.display = "none";
+                label.after(editor);
+                editor.focus();
+                editor.select();
+
+                let done = false;
+                function finish(commit) {
+                    if (done) return;
+                    done = true;
+                    const v = parseInt(editor.value, 10);
+                    editor.remove();
+                    label.style.display = "";
+                    if (commit && !isNaN(v)) {
+                        slider.value = Math.min(+slider.max, Math.max(+slider.min, v));
+                        slider.dispatchEvent(new Event("input"));
+                    }
+                }
+                editor.addEventListener("keydown", e => {
+                    if (e.key === "Enter") finish(true);
+                    else if (e.key === "Escape") finish(false);
+                });
+                editor.addEventListener("blur", () => finish(true));
+            });
+        });
 
         // Moving the Max Strikeout slider directly (a real user drag, as opposed
         // to the programmatic sync applied above while locked) implicitly unlocks
@@ -751,14 +1025,15 @@
         });
         lockStrikeoutToggle.addEventListener("change", () => requestAnimationFrame(drawSieve));
 
-        // Click the "2nd-row square" figure on the dashboard to scroll to it.
-        dashSquare.addEventListener("click", () => {
-            const target = parseInt(dashSquare.dataset.target, 10);
+        // Click the square / cube / 4th-power figures on the dashboard to
+        // scroll to that cell (if it's within the current sieve length).
+        [dashSquare, dashCube, dashFourth].forEach(el => el.addEventListener("click", () => {
+            const target = parseInt(el.dataset.target, 10);
             const cells = grid.children;
             if (target >= 1 && target <= cells.length) {
                 cells[target - 1].scrollIntoView({ block: "center", behavior: "smooth" });
             }
-        });
+        }));
 
         // Initial paint
         requestAnimationFrame(drawSieve);
