@@ -1,6 +1,6 @@
 # Sieve Demonstration Tool v3.0: Periodic Anti-Node Visualizer
 
-This document details the architectural and mathematical principles behind the next-generation sieve visualization tool created in [`sieves_v3.html`](file:///Users/halgren/git/Prime_Number_Practice/sieves_v3.html).
+This document details the architectural and mathematical principles behind the next-generation sieve visualization tool created in [`sieves_v3.html`](sieves_v3.html).
 
 ---
 
@@ -20,7 +20,7 @@ To align with the upstream specification, the visualization distinguishes betwee
 
 ## 2. Key Visualizations Implemented
 
-We have implemented the following core visualizations in [`sieves_v3.html`](file:///Users/halgren/git/Prime_Number_Practice/sieves_v3.html):
+We have implemented the following core visualizations in [`sieves_v3.html`](sieves_v3.html):
 
 ### A. Dynamic Interference Grid
 * **Visual Representation:** Cells are colored using high-fidelity dark-mode HSL gradients mapped to their mathematical taxonomy (Primes, Semiprimes, $k$-Almost Primes, Nodes, and Anti-Nodes).
@@ -41,4 +41,4 @@ We have implemented the following core visualizations in [`sieves_v3.html`](file
 ---
 
 ## 3. How to Launch and View
-You can run a local server or directly open [`sieves_v3.html`](file:///Users/halgren/git/Prime_Number_Practice/sieves_v3.html) in any modern web browser to interact with the visualizer.
+You can run a local server or directly open [`sieves_v3.html`](sieves_v3.html) in any modern web browser to interact with the visualizer.
