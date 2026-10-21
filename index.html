@@ -254,6 +254,23 @@
             box-shadow: inset 0 0 0 1px rgba(124, 243, 255, 0.35);
         }
 
+        /* The next prime: the first prime above Max Strikeout, i.e. the first
+           prime whose multiples are NOT being struck. Its square is the first
+           composite the sieve can miss. By Bertrand's postulate it is always
+           less than 2 x Max Strikeout, so when locked it sits in row 2. */
+        .grid-cell.next-prime {
+            outline: 2px dashed #4ade80;
+            outline-offset: -4px;
+            color: #4ade80;
+        }
+
+        /* The next-prime square q^2 (checkbox): the first composite the
+           current strikeout set can miss. Same green dashes as the next prime. */
+        .grid-cell.next-prime-square {
+            outline: 2px dashed #4ade80;
+            outline-offset: -4px;
+        }
+
         .grid-cell.last-column {
             background: rgba(255, 255, 255, 0.02);
             border-right: 2px solid var(--accent);
@@ -388,10 +405,12 @@
             <span>Width <b id="dash-width">7</b> = <b id="dash-width-factors">7</b> · Next primorial width: <b id="dash-primorial-width">30</b> (smallest primorial greater than the width)</span>
             <span>Primorial(<b id="dash-p1">7</b>) = <b id="dash-primorial">210</b></span>
             <span>Next: Primorial(<b id="dash-p2">11</b>) = <b id="dash-next-primorial">2310</b></span>
+            <span>Next prime: <b id="dash-next-prime" class="jumpable" title="Click to scroll to this cell">11</b> (first prime not struck; always &lt; 2 × Max Strikeout, so in row 2 when locked)</span>
             <span>Next-prime square: <b id="dash-square" class="jumpable" title="Click to scroll to this cell">121</b> (sieve is guaranteed-complete up to this value)</span>
             <span>Next-prime cube: <b id="dash-cube" class="jumpable" title="Click to scroll to this cell">1331</b> (first missed Ω=3 composite)</span>
             <span>Next-prime 4th power: <b id="dash-fourth" class="jumpable" title="Click to scroll to this cell">14641</b> (first missed Ω=4 composite)</span>
             <span class="dash-ref">Primorial reference table: <a href="https://oeis.org/A002110" target="_blank" rel="noopener">OEIS A002110</a></span>
+            <span class="dash-ref">The page address always encodes the current view: <a href="#" id="copy-link" title="Copy a link that reopens these exact settings">copy link to this view</a></span>
         </div>
     </details>
 
@@ -465,6 +484,18 @@
             <span class="custom-checkmark"></span>
             Grade Unstruck by Ω (amber 2 · red 3 · purple 4+)
         </label>
+
+        <label class="checkbox-container" title="Highlight the Next Prime: outline q, the first prime above Max Strikeout (the first prime not struck). By Bertrand's postulate it is always less than 2 x Max Strikeout.">
+            <input type="checkbox" id="next-prime-toggle" checked>
+            <span class="custom-checkmark"></span>
+            Highlight Next Prime
+        </label>
+
+        <label class="checkbox-container" title="Highlight the Next-Prime Square: outline q², the square of the next prime (first prime not struck) -- the first composite the sieve can miss.">
+            <input type="checkbox" id="next-square-toggle" checked>
+            <span class="custom-checkmark"></span>
+            Highlight Next-Prime Square
+        </label>
       </div>
     </div>
     </details>
@@ -496,6 +527,8 @@
         const showLinesToggle = document.getElementById("show-lines-toggle");
         const gradeOmegaToggle = document.getElementById("grade-omega-toggle");
         const circlePrimesToggle = document.getElementById("circle-primes-toggle");
+        const nextSquareToggle = document.getElementById("next-square-toggle");
+        const nextPrimeToggle = document.getElementById("next-prime-toggle");
         const renderWarning = document.getElementById("render-warning");
 
         // Browser canvas limits (measured in Chromium: 65,535 px per side and
@@ -517,6 +550,8 @@
         const dashPrimorial = document.getElementById("dash-primorial");
         const dashP2 = document.getElementById("dash-p2");
         const dashNextPrimorial = document.getElementById("dash-next-primorial");
+        const dashNextPrime = document.getElementById("dash-next-prime");
+        const copyLink = document.getElementById("copy-link");
         const dashSquare = document.getElementById("dash-square");
         const dashWidth = document.getElementById("dash-width");
         const dashWidthFactors = document.getElementById("dash-width-factors");
@@ -661,6 +696,8 @@
             const showLines = showLinesToggle.checked;
             const circlePrimes = circlePrimesToggle.checked;
             const gradeOmega = gradeOmegaToggle.checked;
+            const showNextSquare = nextSquareToggle.checked;
+            const showNextPrime = nextPrimeToggle.checked;
 
             // Strikeout Max: locked (default) keeps it equal to the grid width, as
             // before. Unlocked, it's an independent value -- letting the strikeout
@@ -732,6 +769,8 @@
             // Like the primorials above, this tracks the ACTIVE strikeout set
             // (maxStrikeout), not W -- it's the same roughBoundary driving the
             // rough-composite highlighting above.
+            dashNextPrime.innerText = nextPrimeForStrikeout.toLocaleString();
+            dashNextPrime.dataset.target = nextPrimeForStrikeout;
             dashSquare.innerText = roughBoundary.toLocaleString();
             dashSquare.dataset.target = roughBoundary;
 
@@ -762,6 +801,13 @@
                         if (omega === 3) cell.classList.add("omega-3");
                         else if (omega >= 4) cell.classList.add("omega-4plus");
                     }
+                }
+                if (showNextPrime && i === nextPrimeForStrikeout) {
+                    cell.classList.add("next-prime");
+                    cell.title = i + ": next prime (first prime not struck)";
+                }
+                if (showNextSquare && i === roughBoundary) {
+                    cell.classList.add("next-prime-square");
                 }
                 if (i % W === 0) {
                     cell.classList.add("last-column");
@@ -854,12 +900,20 @@
                 ctx.stroke();
             }
 
-            // Extrapolates the line through a->b to the point where y = targetY,
-            // used to extend a stripe's outer ends to the sieve's top/bottom edge
-            // instead of stopping at the center of its first/last struck cell.
-            function extendAlong(a, b, targetY) {
-                const t = (targetY - a.cy) / (b.cy - a.cy);
-                return { cx: a.cx + t * (b.cx - a.cx), cy: targetY };
+            // Continues the ray from `from` through `to` past `to` until it meets
+            // the sieve's boundary (left/right edge or top/bottom edge, whichever
+            // comes first), so a stripe's outer ends reach the edge instead of
+            // stopping at the center of its first/last struck cell.
+            const gridRightX = W * CELL_SIZE;
+            function extendToEdge(from, to) {
+                const dx = to.cx - from.cx, dy = to.cy - from.cy;
+                let t = Infinity;
+                if (dx > 0) t = Math.min(t, (gridRightX - to.cx) / dx);
+                if (dx < 0) t = Math.min(t, -to.cx / dx);
+                if (dy > 0) t = Math.min(t, (gridBottomY - to.cy) / dy);
+                if (dy < 0) t = Math.min(t, -to.cy / dy);
+                if (!isFinite(t)) return to;
+                return { cx: to.cx + t * dx, cy: to.cy + t * dy };
             }
 
             // Point along the ray from `from` toward `to`, at pixel-distance
@@ -899,21 +953,31 @@
                     }
                     if (!segments.length) continue;
 
-                    // Every phase's first point is always in row 0 (since
-                    // p*phase <= p*k <= W), so its first segment can always
-                    // extend up to the true top edge of the sieve -- except
-                    // phase 1 of an anchored prime, which starts at the circle's
-                    // edge instead (the keyhole). Its last segment extends down
-                    // to the sieve's bottom edge, wherever that stripe ends.
-                    if (phase === 1 && anchorRadius) {
-                        segments[0][0] = pointAtDistance(segments[0][0], segments[0][1], anchorRadius);
-                    } else {
-                        segments[0][0] = extendAlong(segments[0][0], segments[0][1], 0);
-                    }
-                    const last = segments.length - 1;
-                    segments[last][1] = extendAlong(segments[last][0], segments[last][1], gridBottomY);
-
-                    segments.forEach(([a, b]) => strokeSegment(a, b, color, thickness));
+                    // Group the segments into stripes ("chains" of segments that
+                    // share endpoints). A stripe breaks where two consecutive
+                    // multiples share a row, i.e. where it wraps across the
+                    // sieve's left/right seam. Each stripe's two ends are extended
+                    // along its own direction until they reach the sieve's edge --
+                    // top, bottom, left or right, whichever comes first -- so no
+                    // stripe stops short at the center of a cell. A stripe leaving
+                    // one side edge re-enters on the other side one row up, as
+                    // on a cylinder. The exception is phase 1 of an anchored
+                    // prime, which starts at its circle's edge (the keyhole).
+                    const chains = [];
+                    segments.forEach((seg, i) => {
+                        if (i > 0 && seg[0] === segments[i - 1][1]) chains[chains.length - 1].push(seg);
+                        else chains.push([seg]);
+                    });
+                    chains.forEach((chain, c) => {
+                        const first = chain[0], last = chain[chain.length - 1];
+                        if (phase === 1 && c === 0 && anchorRadius) {
+                            first[0] = pointAtDistance(first[0], first[1], anchorRadius);
+                        } else {
+                            first[0] = extendToEdge(first[1], first[0]);
+                        }
+                        last[1] = extendToEdge(last[0], last[1]);
+                        chain.forEach(([a, b]) => strokeSegment(a, b, color, thickness));
+                    });
                 }
             }
 
@@ -974,6 +1038,8 @@
         showLinesToggle.addEventListener("change", () => requestAnimationFrame(drawSieve));
         gradeOmegaToggle.addEventListener("change", () => requestAnimationFrame(drawSieve));
         circlePrimesToggle.addEventListener("change", () => requestAnimationFrame(drawSieve));
+        nextSquareToggle.addEventListener("change", () => requestAnimationFrame(drawSieve));
+        nextPrimeToggle.addEventListener("change", () => requestAnimationFrame(drawSieve));
 
         // Click a slider's value to type an integer: Enter/blur commits
         // (clamped to the slider's range), Escape cancels. Commits go through
@@ -1027,7 +1093,15 @@
 
         // Click the square / cube / 4th-power figures on the dashboard to
         // scroll to that cell (if it's within the current sieve length).
-        [dashSquare, dashCube, dashFourth].forEach(el => el.addEventListener("click", () => {
+        copyLink.addEventListener("click", e => {
+            e.preventDefault();
+            writeStateToUrl();
+            const done = () => { copyLink.innerText = "copied"; setTimeout(() => { copyLink.innerText = "copy link to this view"; }, 1500); };
+            if (navigator.clipboard) navigator.clipboard.writeText(location.href).then(done, () => prompt("Copy this link:", location.href));
+            else prompt("Copy this link:", location.href);
+        });
+
+        [dashNextPrime, dashSquare, dashCube, dashFourth].forEach(el => el.addEventListener("click", () => {
             const target = parseInt(el.dataset.target, 10);
             const cells = grid.children;
             if (target >= 1 && target <= cells.length) {
