@@ -684,6 +684,40 @@
             }
             renderWarning.innerText = warnings.join("  ·  ");
             renderWarning.hidden = warnings.length === 0;
+            writeStateToUrl();
+        }
+
+        // ---- View state in the URL --------------------------------------------
+        // Every redraw rewrites the query string (replaceState, so no history
+        // spam); opening that URL restores the same view. Short keys keep
+        // links readable, e.g. ?n=270&w=30&max=7&lock=0&omega=1
+        const URL_SLIDERS = { n: lenSlider, w: widthSlider, thick: thickSlider, zoom: zoomSlider, max: maxStrikeoutSlider };
+        const URL_TOGGLES = { lock: lockStrikeoutToggle, lines: showLinesToggle, circles: circlePrimesToggle, omega: gradeOmegaToggle, nextp: nextPrimeToggle, nextsq: nextSquareToggle };
+
+        function readStateFromUrl() {
+            const params = new URLSearchParams(location.search);
+            for (const [key, slider] of Object.entries(URL_SLIDERS)) {
+                if (!params.has(key)) continue;
+                const v = parseInt(params.get(key), 10);
+                if (!isNaN(v)) slider.value = Math.min(+slider.max, Math.max(+slider.min, v));
+            }
+            for (const [key, toggle] of Object.entries(URL_TOGGLES)) {
+                if (params.has(key)) toggle.checked = params.get(key) === "1";
+            }
+            // An explicit max without lock=1 means the strikeout set was decoupled.
+            if (params.has("max") && !params.has("lock")) lockStrikeoutToggle.checked = false;
+        }
+
+        function writeStateToUrl() {
+            const params = new URLSearchParams();
+            for (const [key, slider] of Object.entries(URL_SLIDERS)) {
+                if (key === "max" && lockStrikeoutToggle.checked) continue; // implied by w
+                params.set(key, slider.value);
+            }
+            for (const [key, toggle] of Object.entries(URL_TOGGLES)) {
+                params.set(key, toggle.checked ? "1" : "0");
+            }
+            history.replaceState(null, "", "?" + params.toString() + location.hash);
         }
 
         function drawSieveInner(warnings) {
@@ -1109,7 +1143,8 @@
             }
         }));
 
-        // Initial paint
+        // Initial paint (restoring any view encoded in the URL first)
+        readStateFromUrl();
         requestAnimationFrame(drawSieve);
     </script>
 </body>
